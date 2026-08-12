@@ -1,0 +1,17 @@
+{
+  "AUTH_TOKENS": [
+    "ad16adfb-ed64-4fc3-aafa-3b0e3acdc8a8"
+  ],
+  "ACTING_USER_ID": "da6ec7f1-7bb8-43c8-a73f-2fcc5f937a1e",
+  "API_KEYS": [
+    "admin456",
+    "sk-test123"
+  ],
+  "HTTP_PROXY": "http://127.0.0.1:8003",
+  "PROXY_POOL": [
+    "127.0.0.1:8002",
+    "127.0.0.1:8003",
+    "127.0.0.1:8078",
+    "127.0.0.1:8079"
+  ]
+}

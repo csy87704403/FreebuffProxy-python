@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>FreebuffProxy 管理面板</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#0d1117;color:#c9d1d9;min-height:100vh;font-size:14px}
+.container{max-width:1100px;margin:0 auto;padding:12px}
+h1{font-size:18px;color:#58a6ff;margin-bottom:8px}
+h2{font-size:15px;color:#8b949e;margin:10px 0 8px}
+.card{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:12px;margin-bottom:12px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
+.btn{background:#238636;color:#fff;border:none;border-radius:6px;padding:7px 12px;cursor:pointer;font-size:13px}
+.btn:hover{filter:brightness(1.15)}
+.btn-primary{background:#1f6feb}
+.btn-danger{background:#da3633}
+.btn-outline{background:transparent;border:1px solid #30363d;color:#c9d1d9}
+.btn-sm{padding:4px 10px;font-size:12px}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+textarea{width:100%;min-height:80px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#c9d1d9;padding:8px;font-family:inherit;font-size:13px;resize:vertical}
+input{background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#c9d1d9;padding:7px 10px;font-size:13px;width:100%}
+select{background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#c9d1d9;padding:6px 8px;font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:5px 7px;text-align:left;border-bottom:1px solid #21262d}
+th{color:#8b949e;font-weight:500}
+code{font-family:ui-monospace,monospace;background:#21262d;padding:2px 6px;border-radius:4px;font-size:12px}
+.badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:11px;font-weight:500}
+.badge-ok{background:#1f6feb33;color:#58a6ff}
+.badge-good{background:#23863633;color:#3fb950}
+.badge-warn{background:#d2992233;color:#e3b341}
+.badge-bad{background:#da363333;color:#f85149}
+.badge-idle{background:#30363d;color:#8b949e}
+.chip{display:inline-block;background:#21262d;border:1px solid #30363d;border-radius:14px;padding:2px 9px;font-size:12px;margin:2px}
+.chip.ok{border-color:#238636;color:#3fb950}
+.chip.err{border-color:#da3633;color:#f85149}
+.chip.time{color:#d29922}
+
+/* 导航栏 */
+.nav{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px;border-bottom:1px solid #30363d;padding-bottom:6px}
+.nav a{color:#8b949e;text-decoration:none;padding:6px 12px;border-radius:6px;font-size:13px;cursor:pointer}
+.nav a:hover{background:#21262d;color:#c9d1d9}
+.nav a.active{background:#1f6feb33;color:#58a6ff;font-weight:500}
+
+/* 页面切换 */
+.page{display:none}
+.page.active{display:block}
+
+/* 移动端自适应 */
+@media(max-width:640px){
+  .container{padding:8px}
+  .card{padding:10px}
+  .row{gap:6px}
+  .nav a{padding:5px 8px;font-size:12px}
+  .nav{overflow-x:auto;white-space:nowrap;flex-wrap:nowrap;gap:3px}
+  table{font-size:12px}
+  th,td{padding:4px 5px}
+  .btn{padding:6px 10px;font-size:12px}
+  input{padding:6px 8px;font-size:12px}
+  textarea{font-size:12px;padding:6px}
+}
+
+/* 复选框样式 */
+input[type=checkbox]{width:auto;margin-right:4px;accent-color:#58a6ff}
+
+/* 探测进度条 */
+.progress-bar{height:3px;background:#30363d;border-radius:3px;overflow:hidden;margin:4px 0}
+.progress-bar .fill{height:100%;width:0%;background:#58a6ff;transition:width .3s linear}
+
+/* 闪屏 */
+#flash{position:fixed;top:12px;right:12px;background:#238636;color:#fff;padding:8px 16px;border-radius:8px;font-size:13px;z-index:999;display:none}
+#flash.error{background:#da3633}
+
+/* log-box */
+.log-box{max-height:260px;overflow-y:auto;background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:8px;font-size:12px;font-family:ui-monospace,monospace}
+.log-line{padding:2px 0;border-bottom:1px solid #21262d;word-break:break-all}
+.log-error{color:#f85149}
+.log-info{color:#58a6ff}
+.log-warn{color:#e3b341}
+
+.metrics{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.metric{background:#21262d;border-radius:8px;padding:8px 12px;min-width:100px;flex:1}
+.metric .num{font-size:20px;font-weight:600;color:#58a6ff}
+.metric .label{font-size:11px;color:#8b949e}
+
+.auth-progress{display:none;margin-top:8px;padding:10px;background:#0d1117;border:1px solid #30363d;border-radius:6px}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>⚡ FreebuffProxy</h1>
+
+<!-- 导航栏 -->
+<div class="nav" id="nav">
+  <a data-page="accounts" class="active">账号</a>
+  <a data-page="ips">IP 池</a>
+  <a data-page="apis">API Keys</a>
+  <a data-page="usage">用量</a>
+  <a data-page="logs">日志</a>
+  <a data-page="settings">设置</a>
+</div>
+
+<!-- 页面：账号（默认首页） -->
+<div class="page active" id="page-accounts">
+  <div class="metrics" id="metrics"></div>
+
+  <div class="card">
+    <h2>登录账号</h2>
+    <div class="row">
+      <button class="btn btn-primary" onclick="startAuth()">生成登录链接</button>
+      <span id="auth-status" style="font-size:12px;color:#8b949e"></span>
+    </div>
+    <div id="auth-step2" style="display:none">
+      <p style="font-size:12px;color:#8b949e;margin-bottom:6px">1. 点击下方链接用 GitHub/Google 登录<br>2. 登录后浏览器地址栏会跳转到以 <code>auth_code=</code> 结尾的 URL<br>3. 把完整的 URL 粘贴到下方输入框</p>
+      <div class="row">
+        <a id="auth-login-url" href="#" target="_blank" style="flex:1;font-size:12px;color:#58a6ff;word-break:break-all"></a>
+        <button class="btn btn-sm" onclick="copyUrl()">复制链接</button>
+      </div>
+      <textarea id="auth-callback-input" placeholder="粘贴完整的回调 URL（包含 auth_code=...）" style="min-height:40px;margin-top:6px"></textarea>
+      <div class="row" style="margin-top:6px">
+        <button class="btn btn-primary btn-sm" onclick="verifyAuth()">验证并获取 Token</button>
+        <button class="btn btn-sm" onclick="cancelAuth()">取消</button>
+      </div>
+      <div class="auth-progress" id="auth-progress">
+        <div class="progress-bar"><div class="fill" id="auth-progress-bar"></div></div>
+        <span id="auth-progress-text" style="font-size:11px;color:#8b949e;margin-top:2px">等待登录中...</span>
+      </div>
+    </div>
+    <div id="auth-result" style="display:none;margin-top:6px;padding:8px;background:#0d1117;border:1px solid #30363d;border-radius:6px">
+      <p style="color:#3fb950;font-weight:500">✅ Token 已添加</p>
+      <p id="auth-result-detail" style="font-size:12px;color:#8b949e"></p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <h2 style="margin:0;flex:1">已登录账号</h2>
+      <button class="btn btn-sm" onclick="refreshAccounts()">刷新</button>
+    </div>
+    <table id="account-table"><thead><tr><th>账号</th><th>状态</th><th>模型数</th><th>最后错误</th><th>操作</th></tr></thead><tbody></tbody></table>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <h2 style="margin:0;flex:1">可用模型</h2>
+      <button class="btn btn-primary btn-sm" onclick="loadModels()">拉取模型</button>
+      <button class="btn btn-sm" onclick="probeModels()">探测延迟</button>
+    </div>
+    <div id="model-list" style="max-height:400px;overflow-y:auto"></div>
+  </div>
+</div>
+
+<!-- 页面：IP 池 -->
+<div class="page" id="page-ips">
+  <div class="card">
+    <div class="row">
+      <h2 style="margin:0;flex:1">出口 IP 池</h2>
+      <button class="btn btn-primary btn-sm" onclick="detectAllIPs()">立即检测</button>
+      <button class="btn btn-sm" onclick="saveIPPool()">保存</button>
+    </div>
+    <textarea id="ip-input" placeholder="每行一个 IP:端口&#10;127.0.0.1:8002&#10;127.0.0.1:8003"></textarea>
+    <button class="btn btn-sm" onclick="addIPBatch()" style="margin-top:4px">批量添加</button>
+    <div style="margin-top:10px;overflow-x:auto">
+      <table id="ip-table"><thead><tr><th>地址</th><th>模式</th><th>延迟</th><th>状态</th><th>失败</th><th>操作</th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+</div>
+
+<!-- 页面：API Keys -->
+<div class="page" id="page-apis">
+  <div class="card">
+    <h2>Base URL</h2>
+    <p><code id="base-url" style="font-size:14px"></code></p>
+    <p style="font-size:12px;color:#8b949e;margin-top:4px">外部客户端通过此地址与本代理通信</p>
+  </div>
+  <div class="card">
+    <div class="row">
+      <h2 style="margin:0;flex:1">API Key 列表</h2>
+      <button class="btn btn-sm" onclick="refreshAPIKeys()">刷新</button>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <input id="api-key-input" placeholder="sk-xxx..." style="flex:1;min-width:120px" />
+      <button class="btn btn-primary btn-sm" onclick="createAPIKey()">创建</button>
+    </div>
+    <table id="api-table" style="margin-top:6px"><thead><tr><th>Key</th><th>操作</th></tr></thead><tbody></tbody></table>
+  </div>
+</div>
+
+<!-- 页面：用量 -->
+<div class="page" id="page-usage">
+  <div class="card">
+    <div class="row">
+      <h2 style="margin:0;flex:1">用量统计</h2>
+      <select id="usage-days" onchange="loadUsage()" style="font-size:12px">
+        <option value="1">今日</option>
+        <option value="7">近7天</option>
+        <option value="30">近30天</option>
+      </select>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <div style="flex:1;min-width:200px"><h3 style="font-size:13px;color:#8b949e">按模型</h3><table id="usage-model"><thead><tr><th>模型</th><th>Token</th></tr></thead><tbody></tbody></table></div>
+      <div style="flex:1;min-width:200px"><h3 style="font-size:13px;color:#8b949e">按 API Key</h3><table id="usage-key"><thead><tr><th>API Key</th><th>Token</th></tr></thead><tbody></tbody></table></div>
+    </div>
+  </div>
+</div>
+
+<!-- 页面：日志 -->
+<div class="page" id="page-logs">
+  <div class="card">
+    <div class="row">
+      <h2 style="margin:0;flex:1">调用日志 <span style="font-size:12px;color:#8b949e">(自动清理, 最多500条)</span></h2>
+      <button class="btn btn-danger btn-sm" onclick="clearLogs()">清空</button>
+    </div>
+    <div class="log-box" id="log-box"></div>
+  </div>
+</div>
+
+<!-- 页面：设置 -->
+<div class="page" id="page-settings">
+  <div class="card">
+    <h2>修改登录密码</h2>
+    <div class="row" style="margin-top:6px">
+      <input id="pwd-old" type="password" placeholder="当前密码" style="flex:1;min-width:120px" />
+      <input id="pwd-new" type="password" placeholder="新密码" style="flex:1;min-width:120px" />
+      <button class="btn btn-primary btn-sm" onclick="changePassword()">修改</button>
+    </div>
+    <p id="pwd-result" style="font-size:12px;color:#8b949e;margin-top:4px"></p>
+  </div>
+  <div class="card">
+    <h2>关于</h2>
+    <p style="font-size:13px;color:#8b949e">FreebuffProxy v1.2.0 — 多账号轮询代理</p>
+    <p style="font-size:12px;color:#8b949e">仓库: <a href="https://github.com/csy87704403/FreebuffProxy" target="_blank" style="color:#58a6ff">github.com/csy87704403/FreebuffProxy</a></p>
+  </div>
+</div>
+
+</div>
+<div id="flash"></div>
+<script src="webui.js"></script>
+</body>
+</html>

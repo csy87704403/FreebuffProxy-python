@@ -66,3 +66,16 @@ python3 freebuff_api.py --proxy http://127.0.0.1:8078 \
 ## 与 Go 版本的关系
 
 本仓库是 **Python 参考实现**（协议验证用），生产推荐使用 Go 版本 [FreebuffProxy](https://github.com/csy87704403/FreebuffProxy)（约 12MB 内存 + 原生并发）。
+
+## 管理面板（Web UI）
+
+启动后访问 `http://<host>:18082/` 即打开管理面板，功能与 Go 版对齐：
+
+- **账号**：多账号管理（OAuth 登录 / 导入 / 删除 / 冷却状态），模型拉取 + 延迟探测
+- **IP 池**：代理节点管理，一键检测 full/limited/blocked 模式
+- **API Keys**：创建/删除 API key，查看 Base URL
+- **用量**：按模型 / 按 API Key 统计 token
+- **日志**：实时调用日志（自动清理，最多 500 条）
+- **设置**：修改管理密码
+
+管理面板不需要 API key 认证（仅 `/v1/*` 外部 API 需要）。
