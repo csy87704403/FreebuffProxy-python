@@ -1,0 +1,4 @@
+config.json
+proxy_pool.json
+*.log
+__pycache__/

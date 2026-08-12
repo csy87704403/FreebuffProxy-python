@@ -1,0 +1,7 @@
+{
+  "AUTH_TOKENS": ["your-freebuff-token-here"],
+  "ACTING_USER_ID": "your-acting-user-id",
+  "API_KEYS": ["admin123"],
+  "HTTP_PROXY": "http://127.0.0.1:8003",
+  "PROXY_POOL": ["127.0.0.1:8002", "127.0.0.1:8003"]
+}
